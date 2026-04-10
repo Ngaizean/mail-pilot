@@ -22,6 +22,26 @@ DEFAULT_MAILBOX = "INBOX"
 DEFAULT_LIMIT = 20
 
 
+def _imap_id(imap_client: imaplib.IMAP4 | imaplib.IMAP4_SSL, name: str = "Mail Pilot", version: str = "1.0") -> None:
+    """Send IMAP ID command (RFC 2971) if supported.
+
+    Some providers (e.g. 163.com) require IMAP ID before allowing SELECT.
+    """
+    try:
+        tag = imap_client._new_tag()
+        id_args = '("name" "{}" "version" "{}")'.format(name, version)
+        imap_client.send(b'%s ID %s\r\n' % (tag, id_args.encode()))
+        # Consume untagged response (* ID ...) and tagged response
+        while True:
+            line = imap_client.readline()
+            if not line:
+                break
+            if line.startswith(tag):
+                return
+    except Exception as e:
+        logger.debug("IMAP ID not supported or failed: %s", e)
+
+
 def _connect_imap(
     host: str, port: int, use_ssl: bool, timeout: int,
 ) -> imaplib.IMAP4 | imaplib.IMAP4_SSL:
@@ -160,6 +180,10 @@ def _open_mailbox(
         account["imap_ssl"], timeout,
     )
     mail.login(account["email"], password)
+
+    # Send IMAP ID (RFC 2971) — required by some providers (e.g. 163.com)
+    # before SELECT, otherwise SELECT is rejected with "Unsafe Login".
+    _imap_id(mail)
 
     status, data = mail.select(mailbox, readonly=readonly)
     if status != "OK":
