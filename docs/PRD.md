@@ -6,7 +6,8 @@
 **定位：** 面向 AI Agent 的安全邮件收发工具（OpenClaw / Claude Code Skill）
 **开源协议：** MIT
 **仓库：** https://github.com/Ngaizean/mail-pilot
-**技术栈：** Python 3.10+（核心零外部依赖）
+**技术栈：** Python 3.9+（核心零外部依赖）
+**状态：** M1-M4 全部完成，57 个测试通过
 
 ### 1.1 解决的问题
 
@@ -190,7 +191,7 @@
 
 ### 3.2 兼容性
 
-- Python 3.10+
+- Python 3.9+（使用 `from __future__ import annotations` 确保类型注解兼容）
 - macOS 12+（Keychain）, Ubuntu 20.04+（libsecret）, Debian 11+
 - OpenClaw Skill 格式兼容（SKILL.md + scripts/）
 - Claude Code MCP Skill 格式兼容
@@ -497,12 +498,14 @@ def make_chinese_email(
 
 ## 7. 里程碑
 
-| Phase | 内容 | 预计时间 |
+| Phase | 内容 | 状态 |
 |---|---|---|
-| **M1** | setup 向导 + Keychain 存储 + SMTP 发件 + 重试 + 去重 + SKILL.md | 1-2 天 |
-| **M2** | IMAP 收件（check/fetch/search/download/mark）+ 回复/转发 | 1 天 |
-| **M3** | Jinja2 模板 + 示例模板 + 中文编码 + 测试 + 文档完善 | 1 天 |
-| **M4** | ClawHub 发布 + GitHub Actions CI + pyproject.toml 打包 | 0.5 天 |
+| **M1** | setup 向导 + Keychain 存储 + SMTP 发件 + 重试 + 去重 + SKILL.md | 已完成 |
+| **M2** | IMAP 收件（check/fetch/search/download/mark）+ 回复/转发 | 已完成 |
+| **M3** | Jinja2 模板 + 示例模板 + 中文编码 + 测试 + 文档完善 | 已完成 |
+| **M4** | GitHub Actions CI + pyproject.toml 打包 + 文档更新 | 已完成 |
+
+**实现统计：** 26 个文件，~4000 行代码，10 个源码模块，14 个 CLI 命令，57 个测试用例
 
 ---
 
@@ -510,7 +513,7 @@ def make_chinese_email(
 
 | 特性 | Mail Pilot | open-email-skill (Node) | python-smtp-skill | imap-mcp-server |
 |---|---|---|---|---|
-| **语言** | Python 3.10+ | Node.js | Python | Python |
+| **语言** | Python 3.9+ | Node.js | Python | Python |
 | **核心依赖** | 零（stdlib） | npm (nodemailer 等) | 零 | imapclient |
 | **凭据存储** | 系统原生 Keychain | .env 文件 | config.toml | .env 文件 |
 | **多账号** | 原生支持，别名切换 | 手动改配置 | 前缀变量 | 单账号 |
