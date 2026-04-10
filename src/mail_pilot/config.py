@@ -42,7 +42,14 @@ def load_config() -> dict[str, Any]:
         return config
 
     with open(CONFIG_PATH, "r", encoding="utf-8") as f:
-        config = json.load(f)
+        try:
+            config = json.load(f)
+        except json.JSONDecodeError as e:
+            raise ValueError(
+                f"配置文件损坏: {CONFIG_PATH}\n"
+                f"JSON 解析错误: {e}\n"
+                f"请手动修复或删除后重新运行 setup"
+            )
 
     # Run migrations if needed
     version = config.get("version", 0)

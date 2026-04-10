@@ -142,19 +142,12 @@ def _parse_recent_period(period: str) -> datetime:
         raise ValueError(f"无法解析时间范围: {period}（支持 h/m/d 后缀，如 2h, 30m, 7d）")
 
 
-def _get_uid_validity(mail: imaplib.IMAP4 | imaplib.IMAP4_SSL) -> str:
-    """Get UIDVALIDITY for current mailbox."""
-    result = mail.response("UIDVALIDITY")
-    if result and result[1]:
-        return result[1][0].decode()
-    return "unknown"
-
-
 def _open_mailbox(
     config: dict,
     alias_or_email: Optional[str],
     mailbox: str,
     timeout: int,
+    readonly: bool = True,
 ) -> tuple[imaplib.IMAP4 | imaplib.IMAP4_SSL, dict[str, Any]]:
     """Connect, login, and select a mailbox. Returns (mail_conn, account)."""
     account = resolve_account(config, alias_or_email)
@@ -167,29 +160,7 @@ def _open_mailbox(
         account["imap_ssl"], timeout,
     )
     mail.login(account["email"], password)
-    mail.select(mailbox, readonly=True)
-
-    return mail, account
-
-
-def _open_mailbox_writable(
-    config: dict,
-    alias_or_email: Optional[str],
-    mailbox: str,
-    timeout: int,
-) -> tuple[imaplib.IMAP4 | imaplib.IMAP4_SSL, dict[str, Any]]:
-    """Connect, login, and select a mailbox in read-write mode."""
-    account = resolve_account(config, alias_or_email)
-    password = retrieve_password(
-        account["alias"], account["email"], account["credential_backend"]
-    )
-
-    mail = _connect_imap(
-        account["imap_host"], account["imap_port"],
-        account["imap_ssl"], timeout,
-    )
-    mail.login(account["email"], password)
-    mail.select(mailbox, readonly=False)
+    mail.select(mailbox, readonly=readonly)
 
     return mail, account
 
@@ -216,8 +187,8 @@ def check(
         criteria = []
         if recent:
             since_date = _parse_recent_period(recent)
-            # IMAP SINCE uses date-only format DD-Mon-YYYY
-            criteria.append(f'(SINCE "{since_date.strftime("%d-%b-%Y")}")')
+            # IMAP SINCE uses date-only format DD-Mon-YYYY (no quotes, no parens)
+            criteria.append(f'SINCE {since_date.strftime("%d-%b-%Y")}')
 
         search_query = " ".join(criteria) if criteria else "ALL"
 
@@ -328,10 +299,10 @@ def search(
             criteria.append(f'SUBJECT "{subject_filter}"')
         if since:
             since_date = _parse_recent_period(since)
-            criteria.append(f'SINCE "{since_date.strftime("%d-%b-%Y")}"')
+            criteria.append(f'SINCE {since_date.strftime("%d-%b-%Y")}')
         if before:
             before_date = _parse_recent_period(before)
-            criteria.append(f'BEFORE "{before_date.strftime("%d-%b-%Y")}"')
+            criteria.append(f'BEFORE {before_date.strftime("%d-%b-%Y")}')
         if unseen:
             criteria.append("UNSEEN")
 
@@ -459,7 +430,7 @@ def mark_read(
     timeout: int = DEFAULT_TIMEOUT,
 ) -> dict[str, Any]:
     """Mark emails as read (add \\Seen flag)."""
-    mail, account = _open_mailbox_writable(config, alias_or_email, mailbox, timeout)
+    mail, account = _open_mailbox(config, alias_or_email, mailbox, timeout, readonly=False)
 
     try:
         marked = []
@@ -491,7 +462,7 @@ def mark_unread(
     timeout: int = DEFAULT_TIMEOUT,
 ) -> dict[str, Any]:
     """Mark emails as unread (remove \\Seen flag)."""
-    mail, account = _open_mailbox_writable(config, alias_or_email, mailbox, timeout)
+    mail, account = _open_mailbox(config, alias_or_email, mailbox, timeout, readonly=False)
 
     try:
         marked = []

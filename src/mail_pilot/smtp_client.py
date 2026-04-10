@@ -216,7 +216,8 @@ def send_email(
 
     # Read body from file if specified
     if body_file:
-        with open(body_file, "r", encoding="utf-8") as f:
+        body_file_path = validate_attachment_path(body_file)
+        with open(str(body_file_path), "r", encoding="utf-8") as f:
             body = f.read()
 
     # Validate
@@ -295,6 +296,7 @@ def send_email(
         account["alias"], account["email"], account["credential_backend"]
     )
 
+    server = None
     try:
         server = _connect_smtp(
             account["smtp_host"],
@@ -305,11 +307,6 @@ def send_email(
         server.login(account["email"], password)
 
         result = _send_with_retry(server, from_addr, all_recipients, msg, max_retries)
-
-        try:
-            server.quit()
-        except Exception:
-            pass
 
     except smtplib.SMTPAuthenticationError as e:
         return {
@@ -324,6 +321,12 @@ def send_email(
             "error": "connection_failed",
             "detail": f"连接 SMTP 服务器失败: {e}",
         }
+    finally:
+        if server:
+            try:
+                server.quit()
+            except Exception:
+                pass
 
     # Mark as sent for dedup
     if dedup and result["status"] == "sent":

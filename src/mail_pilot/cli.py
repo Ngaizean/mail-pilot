@@ -18,7 +18,7 @@ from mail_pilot.config import (
     resolve_account,
 )
 from mail_pilot.credentials import get_backend
-from mail_pilot.presets import detect_provider, list_providers
+from mail_pilot.presets import detect_provider
 from mail_pilot.security import sanitize_alias, sanitize_email
 from mail_pilot.smtp_client import send_email, test_connection
 
@@ -47,11 +47,6 @@ def _setup_logging(verbose: bool = False, quiet: bool = False) -> None:
         format="[%(levelname)s] %(message)s",
         stream=sys.stderr,
     )
-
-
-def _get_account_flag(args: argparse.Namespace) -> dict:
-    """Common: load config and extract account flag."""
-    return load_config(), getattr(args, "from_account", None) or getattr(args, "account", None)
 
 
 # ── M1 Commands ──────────────────────────────────────────────────────────────
@@ -159,7 +154,6 @@ def cmd_send(args: argparse.Namespace) -> int:
             parse_var_args,
             render_template,
         )
-        from mail_pilot.config import resolve_account
         account = resolve_account(config, args.from_account)
         extra_vars = parse_var_args(getattr(args, "var", None))
         context = build_template_context(

@@ -7,6 +7,8 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+import base64
+import hashlib
 
 logger = logging.getLogger(__name__)
 
@@ -24,10 +26,10 @@ def get_backend() -> str:
         One of: "keychain", "keyring", "fernet".
     """
     if sys.platform == "darwin":
-        # Check if `security` CLI is available
+        # Check if `security` CLI exists and is functional
         try:
             subprocess.run(
-                ["security", "authorizationdb", "read", "system.keychain.modify"],
+                ["security", "find-generic-password", "-s", "com.mail-pilot.healthcheck"],
                 capture_output=True, timeout=5,
             )
             return "keychain"
@@ -105,8 +107,6 @@ def keychain_delete(service: str, account: str) -> None:
 
 def _derive_key(passphrase: str, salt: bytes) -> bytes:
     """Derive a Fernet key from passphrase and salt."""
-    import base64
-    import hashlib
     return base64.urlsafe_b64encode(
         hashlib.pbkdf2_hmac("sha256", passphrase.encode(), salt, 200000)[:32]
     )
