@@ -67,13 +67,26 @@ def keychain_set(service: str, account: str, password: str) -> None:
         capture_output=True,
     )
 
-    # Store via stdin (not CLI args, to avoid exposing in `ps`)
-    subprocess.run(
-        ["security", "add-generic-password",
-         "-a", account, "-s", service, "-w"],
-        input=password.encode(),
-        check=True,
-    )
+    # Try stdin pipe first (avoids exposing password in `ps` output)
+    try:
+        subprocess.run(
+            ["security", "add-generic-password",
+             "-a", account, "-s", service, "-w"],
+            input=password.encode(),
+            check=True,
+            stderr=subprocess.PIPE,
+        )
+    except subprocess.CalledProcessError:
+        # Fallback for non-TTY environments (e.g. AI agent calls):
+        # stdin pipe fails because `security` expects interactive confirmation.
+        # Use -w with the password directly — less ideal for `ps` visibility,
+        # but necessary when no TTY is available.
+        logger.debug("stdin 方式写入 Keychain 失败，使用直接参数方式")
+        subprocess.run(
+            ["security", "add-generic-password",
+             "-a", account, "-s", service, "-w", password],
+            check=True,
+        )
     logger.info("密码已存入 Keychain: %s / %s", service, account)
 
 
