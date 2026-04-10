@@ -67,21 +67,21 @@ def keychain_set(service: str, account: str, password: str) -> None:
         capture_output=True,
     )
 
-    # Try stdin pipe first (avoids exposing password in `ps` output)
-    try:
+    # Check if we have a TTY — `security -w` with stdin pipe silently
+    # writes empty password when no TTY is available.
+    import sys as _sys
+    if _sys.stdin.isatty():
+        # Interactive TTY: use stdin pipe (avoids exposing in `ps`)
         subprocess.run(
             ["security", "add-generic-password",
              "-a", account, "-s", service, "-w"],
             input=password.encode(),
             check=True,
-            stderr=subprocess.PIPE,
         )
-    except subprocess.CalledProcessError:
-        # Fallback for non-TTY environments (e.g. AI agent calls):
-        # stdin pipe fails because `security` expects interactive confirmation.
-        # Use -w with the password directly — less ideal for `ps` visibility,
-        # but necessary when no TTY is available.
-        logger.debug("stdin 方式写入 Keychain 失败，使用直接参数方式")
+    else:
+        # Non-TTY (e.g. AI agent): use -w with password as argument
+        # (less ideal for `ps` visibility, but necessary)
+        logger.debug("非 TTY 环境，使用直接参数方式写入 Keychain")
         subprocess.run(
             ["security", "add-generic-password",
              "-a", account, "-s", service, "-w", password],
