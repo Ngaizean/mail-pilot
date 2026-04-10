@@ -15,3 +15,6 @@ venv/
 .mypy_cache/
 .pytest_cache/
 .cache/
+*.lock
+accounts.json
+accounts.json.bak.*

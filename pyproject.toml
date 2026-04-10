@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "mail-pilot"
+version = "0.1.0"
+description = "A secure, zero-dependency email CLI for AI agents"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.9"
+authors = [
+    { name = "Ngaizean" },
+]
+keywords = ["email", "smtp", "imap", "ai-agent", "cli"]
+
+[project.optional-dependencies]
+template = ["jinja2>=3.1"]
+keyring = ["keyring>=24.0"]
+crypto = ["cryptography>=41.0"]
+dev = ["pytest>=7.0"]
+
+[project.scripts]
+mail-pilot = "mail_pilot.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
