@@ -160,7 +160,16 @@ def _open_mailbox(
         account["imap_ssl"], timeout,
     )
     mail.login(account["email"], password)
-    mail.select(mailbox, readonly=readonly)
+
+    status, data = mail.select(mailbox, readonly=readonly)
+    if status != "OK":
+        try:
+            mail.logout()
+        except Exception:
+            pass
+        raise imaplib.IMAP4.error(
+            f"无法选择邮箱 '{mailbox}': {data}"
+        )
 
     return mail, account
 
